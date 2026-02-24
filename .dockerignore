@@ -1,0 +1,11 @@
+.venv
+__pycache__
+.git
+.idea
+.env
+chroma_db/
+storage/
+telegram_session.session
+sync_all.log
+*.pyc
+*.pyo
