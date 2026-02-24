@@ -22,17 +22,10 @@ ENV/
 # ─── Telegram Session ─────────────────────────────────────────────────────────
 telegram_session.session
 telegram_session.session-journal
-*.session
-*.session-journal
+# ─── ChromaDB AND Stickers are tracked for Cloud Run ───────────────
+# We intentionally track the database and stickers so GitHub Actions / Cloud Build 
+# can bundle them into the deployment image.
 
-# ─── ChromaDB (vector store data) ────────────────────────────────────────────
-chroma_db/
-
-# ─── Sticker Storage (large binary files) ────────────────────────────────────
-storage/stickers/*.webp
-storage/stickers/*.webm
-# (keep the directory itself via .gitkeep)
-!storage/stickers/.gitkeep
 
 # ─── LangGraph generated diagram ─────────────────────────────────────────────
 graph_flow.md
