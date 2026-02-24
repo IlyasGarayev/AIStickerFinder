@@ -1,0 +1,54 @@
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ─── Virtual Environments ─────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ─── Environment & Secrets ────────────────────────────────────────────────────
+.env
+*.env.local
+
+# ─── Telegram Session ─────────────────────────────────────────────────────────
+telegram_session.session
+telegram_session.session-journal
+*.session
+*.session-journal
+
+# ─── ChromaDB (vector store data) ────────────────────────────────────────────
+chroma_db/
+
+# ─── Sticker Storage (large binary files) ────────────────────────────────────
+storage/stickers/*.webp
+storage/stickers/*.webm
+# (keep the directory itself via .gitkeep)
+!storage/stickers/.gitkeep
+
+# ─── LangGraph generated diagram ─────────────────────────────────────────────
+graph_flow.md
+
+# ─── IDEs ─────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+
+# ─── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+
+# ─── MyPy / Pyright ───────────────────────────────────────────────────────────
+.mypy_cache/
+.pyright/

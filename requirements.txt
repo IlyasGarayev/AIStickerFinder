@@ -1,0 +1,32 @@
+# ─── Core Framework ────────────────────────────────────────────────────────────
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+python-dotenv>=1.0.0
+
+# ─── Google Gen AI (NEW SDK — replaces deprecated google-generativeai) ─────────
+google-genai>=0.3.0
+
+# ─── LangGraph Orchestration ───────────────────────────────────────────────────
+langgraph>=0.2.0
+langchain-core>=0.3.0
+
+# ─── Vector Store ──────────────────────────────────────────────────────────────
+chromadb>=0.5.0
+
+# ─── Telegram Downloader ───────────────────────────────────────────────────────
+Telethon>=1.36.0
+
+# ─── Image Processing ──────────────────────────────────────────────────────────
+Pillow>=10.0.0
+
+# ─── Async File I/O ────────────────────────────────────────────────────────────
+aiofiles>=23.0.0
+
+# ─── System dependency (NOT pip-installable) ───────────────────────────────────
+# ffmpeg is required for animated sticker conversion (.webm → animated .webp).
+#   Ubuntu/Debian:  sudo apt install ffmpeg
+#   macOS (brew):   brew install ffmpeg
+
+# ─── Optional: Redis-backed Translation Cache ──────────────────────────────────
+# Uncomment if USE_REDIS_CACHE=true in .env
+# redis>=5.0.0
