@@ -1,0 +1,13 @@
+.git
+.gitignore
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+telegram_session.session
+telegram_session.session-journal
+
+# Note: We specifically DO NOT ignore chroma_db/ and storage/stickers/ here 
+# because Cloud Run needs them baked into the Docker image.

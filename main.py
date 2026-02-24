@@ -85,6 +85,7 @@ origins = [
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
     "https://stickerfinder.ilyasgarayev.com",
+    "https://aistickerfinder-git-91281591862.europe-west1.run.app",
 ]
 
 app.add_middleware(
