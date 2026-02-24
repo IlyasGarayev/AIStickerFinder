@@ -285,6 +285,7 @@ async def serve_sticker(sticker_id: str):
         path=str(file_path),
         media_type="image/webp",
         filename=f"{sticker_id}.webp",
+        headers={"Access-Control-Allow-Origin": "*"}
     )
 
 
