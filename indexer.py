@@ -45,6 +45,9 @@ class StickerMetadata(TypedDict):
     implied_situation: str
     action_description: str   # Motion for animated stickers; "none" for static
     text_content: str
+    language: str             # e.g. "English", "Azerbaijani", "none" if no text
+    specific_domain: str      # e.g. "Software Engineering", "Gaming", "Everyday"
+    example_situations: list[str] # max 4 specific scenarios to use this sticker
     semantic_tags: list[str]
     vibe_category: str
     predictive_queries: list[str]
@@ -79,12 +82,12 @@ class AsyncRateLimiter:
                 self._tokens -= 1.0
 
 
-# Vision: 30 RPM
-_vision_limiter = AsyncRateLimiter(max_calls=30, period=60.0)
-_vision_semaphore = asyncio.Semaphore(5)
+# Vision: 1000 RPM (Tier 1 limits)
+_vision_limiter = AsyncRateLimiter(max_calls=1000, period=60.0)
+_vision_semaphore = asyncio.Semaphore(50)
 
-# Embedding: 40 RPM
-_embed_limiter = AsyncRateLimiter(max_calls=40, period=60.0)
+# Embedding: 1400 RPM
+_embed_limiter = AsyncRateLimiter(max_calls=1400, period=60.0)
 
 
 # ─── Retry Helper ─────────────────────────────────────────────────────────────
@@ -140,11 +143,16 @@ Respond ONLY with a single valid JSON object — no markdown fences, no extra ke
   "implied_situation": "<1-2 sentences: real-world scenario for sending this sticker>",
   "action_description": "none",
   "text_content": "<Exact text on sticker, or 'none'>",
+  "language": "<Language of the text_content (e.g. 'English', 'Azerbaijani', 'Russian') or 'none'>",
+  "specific_domain": "<Specific field/niche this belongs to (e.g. 'Software Engineering', 'Gaming', 'Daily Chat', 'Anime')>",
+  "example_situations": ["<Situation 1>", "<Situation 2>", "<Situation 3>", "<Situation 4>"],
   "semantic_tags": ["<tag1>", "<tag2>", "<tag3>", "<tag4>", "<tag5>"],
   "vibe_category": "<snake_case_category>",
   "predictive_queries": ["<query1>", "<query2>", "<query3>", "<query4>"],
   "is_animated": false
-}"""
+}
+IMPORTANT: example_situations must be an array of at most 4 highly specific real-life situations where sending this sticker is perfect.
+"""
 
 _ANIMATED_PROMPT = """You are an expert sticker analyst specialised in ANIMATED stickers.
 Analyse the full animation. Respond ONLY with a single valid JSON object — no markdown fences:
@@ -155,11 +163,16 @@ Analyse the full animation. Respond ONLY with a single valid JSON object — no 
   "implied_situation": "<1-2 sentences: real-world scenario for sending this sticker>",
   "action_description": "<Key motion in 1-2 sentences: WHAT IS HAPPENING, e.g. 'A cat repeatedly slams a keyboard then collapses face-down'>",
   "text_content": "<Exact text on sticker, or 'none'>",
+  "language": "<Language of the text_content (e.g. 'English', 'Azerbaijani', 'Russian') or 'none'>",
+  "specific_domain": "<Specific field/niche this belongs to (e.g. 'Software Engineering', 'Gaming', 'Daily Chat', 'Anime')>",
+  "example_situations": ["<Situation 1>", "<Situation 2>", "<Situation 3>", "<Situation 4>"],
   "semantic_tags": ["<tag1>", "<tag2>", "<tag3>", "<tag4>", "<tag5>"],
   "vibe_category": "<snake_case_category>",
   "predictive_queries": ["<query1>", "<query2>", "<query3>", "<query4>"],
   "is_animated": true
-}"""
+}
+IMPORTANT: example_situations must be an array of at most 4 highly specific real-life situations where sending this sticker is perfect.
+"""
 
 
 # ─── API Clients (aiohttp) ────────────────────────────────────────────────────
@@ -243,6 +256,7 @@ async def describe_sticker(sticker_path: Path) -> StickerMetadata | None:
 def build_super_context(metadata: StickerMetadata, sticker_id: str) -> str:
     tags    = ", ".join(metadata["semantic_tags"])
     queries = " | ".join(metadata["predictive_queries"])
+    situations = " | ".join(metadata.get("example_situations", []))
     action  = (
         f" Action: {metadata['action_description']}."
         if metadata.get("is_animated") and metadata.get("action_description") != "none"
@@ -253,7 +267,9 @@ def build_super_context(metadata: StickerMetadata, sticker_id: str) -> str:
         f"Visual: {metadata['visual_description']}{action} "
         f"Emotional vibe: {metadata['emotional_vibe']}. "
         f"Situation: {metadata['implied_situation']} "
-        f"Text: {metadata['text_content']}. "
+        f"Examples: {situations}. "
+        f"Text [{metadata.get('language', 'none')}]: {metadata['text_content']}. "
+        f"Domain: {metadata.get('specific_domain', 'Everyday')}. "
         f"Tags: {tags}. "
         f"Category: {metadata['vibe_category']}. "
         f"Predictive queries: {queries}."
@@ -368,6 +384,9 @@ async def run_indexer(storage_dir: Path | None = None) -> dict[str, int]:
                     "implied_situation":  m["implied_situation"],
                     "action_description": m.get("action_description", "none"),
                     "text_content":       m["text_content"],
+                    "language":           m.get("language", "none"),
+                    "specific_domain":    m.get("specific_domain", "Everyday"),
+                    "example_situations": json.dumps(m.get("example_situations", [])),
                     "semantic_tags":      ", ".join(m["semantic_tags"]),
                     "vibe_category":      m["vibe_category"],
                     "predictive_queries": " | ".join(m["predictive_queries"]),

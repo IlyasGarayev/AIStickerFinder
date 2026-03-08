@@ -145,6 +145,12 @@ def _is_animated_sticker(document: Document) -> bool:
         return False
     return document.mime_type.startswith("video/")
 
+def _is_lottie_sticker(document: Document) -> bool:
+    """Return True if it is a .tgs (Lottie) vector sticker which PIL cannot parse."""
+    if not document.mime_type:
+        return False
+    return document.mime_type == "application/x-tgsticker"
+
 
 # ─── Core Downloader ──────────────────────────────────────────────────────────
 
@@ -206,15 +212,22 @@ async def download_sticker_pack(pack_url: str) -> list[StickerFile]:
 
         results = await asyncio.gather(
             *[bounded_download(d) for d in documents],
-            return_exceptions=False,
+            return_exceptions=True,
         )
 
-    animated_count = sum(1 for r in results if r["is_animated"])
+        valid_results = []
+        for r in results:
+            if isinstance(r, Exception):
+                logger.warning("Skipping individual sticker due to error: %s", r)
+                continue
+            valid_results.append(r)
+
+    animated_count = sum(1 for r in valid_results if r["is_animated"])
     logger.info(
         "Pack '%s' downloaded: %d static, %d animated.",
-        short_name, len(results) - animated_count, animated_count,
+        short_name, len(valid_results) - animated_count, animated_count,
     )
-    return results
+    return valid_results
 
 
 async def _download_single(
@@ -223,6 +236,9 @@ async def _download_single(
     storage_dir: Path,
 ) -> StickerFile:
     """Download and process a single sticker document."""
+    if _is_lottie_sticker(document):
+        raise ValueError("Lottie (.tgs) vector stickers are not currently supported.")
+
     sticker_id = str(uuid.uuid4())
     file_path = storage_dir / f"{sticker_id}.webp"
 

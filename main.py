@@ -16,20 +16,24 @@ Run with:
 from __future__ import annotations
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 import aiofiles
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, HttpUrl, field_validator
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 import config
 import database
 import graph_engine
 import indexer
 from downloader import download_sticker_pack
+import user_db
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -154,6 +158,33 @@ class SearchResponse(BaseModel):
     total_indexed: int
 
 
+# ─── Auth ─────────────────────────────────────────────────────────────────────
+
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+
+def get_current_user(request: Request) -> dict:
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    
+    token = auth_header.split(" ")[1]
+    try:
+        info = id_token.verify_oauth2_token(token, google_requests.Request(), GOOGLE_CLIENT_ID)
+        user_id = info["sub"]
+        user_db.upsert_user(
+            user_id, 
+            info.get("email", ""), 
+            info.get("name", ""), 
+            info.get("picture", "")
+        )
+        return {"user_id": user_id, **info}
+    except Exception as e:
+        logger.warning(f"Invalid token: {e}")
+        raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
+
+class FavoriteRequest(BaseModel):
+    sticker_id: str
+
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
 
@@ -260,6 +291,36 @@ async def search_stickers(body: SearchRequest):
         results=sticker_results,
         total_indexed=database.collection_count(),
     )
+
+
+@app.get("/favorites", tags=["Favorites"])
+async def list_favorites(user: dict = Depends(get_current_user)):
+    user_id = user["user_id"]
+    try:
+        fav_ids = user_db.get_favorites(user_id)
+        return {"favorites": fav_ids}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.post("/favorites", tags=["Favorites"])
+async def add_favorite(body: FavoriteRequest, user: dict = Depends(get_current_user)):
+    user_id = user["user_id"]
+    try:
+        user_db.add_favorite(user_id, body.sticker_id)
+        return {"status": "ok", "sticker_id": body.sticker_id}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.delete("/favorites/{sticker_id}", tags=["Favorites"])
+async def remove_favorite(sticker_id: str, user: dict = Depends(get_current_user)):
+    user_id = user["user_id"]
+    try:
+        user_db.remove_favorite(user_id, sticker_id)
+        return {"status": "ok", "sticker_id": sticker_id}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @app.get("/sticker/{sticker_id}", tags=["Assets"])

@@ -28,10 +28,10 @@ TELEGRAM_SESSION_FILE: str = os.environ.get("TELEGRAM_SESSION_FILE", "telegram_s
 GEMINI_VISION_MODEL: str = "gemini-3-flash-preview"
 
 # Pro model: complex semantic reasoning, translation, re-ranking
-GEMINI_PRO_MODEL: str = "gemini-3.1-pro-preview"
+GEMINI_PRO_MODEL: str = "gemini-2.5-flash"
 
 # Embedding model: 768-dimensional dense vectors
-GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-001"
+GEMINI_EMBEDDING_MODEL: str = "text-embedding-004"
 
 # ─── ChromaDB ─────────────────────────────────────────────────────────────────
 CHROMA_PERSIST_DIR: str = os.environ.get("CHROMA_PERSIST_DIR", "./chroma_db")
